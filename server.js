@@ -10,6 +10,8 @@ app.get('/', (req, res) => {
   res.json({ 
     status: 'Server is running!',
     service: 'video-automation',
+    version: '1.0.0',
+    phase: 'Phase 1 - Basic Server',
     endpoints: {
       health: '/health',
       render: '/render (POST)'
@@ -49,7 +51,11 @@ app.post('/render', async (req, res) => {
       message: 'Remotion rendering will be added in Phase 2',
       videoId: videoData.videoId || 'test',
       timestamp: new Date().toISOString(),
-      nextSteps: 'Add Remotion dependencies and rendering logic'
+      receivedData: {
+        hasVideoAssets: !!videoData.videoAssets,
+        hasAudio: !!videoData.audioBase64,
+        channelName: videoData.channelName || 'unknown'
+      }
     });
     
   } catch (error) {
@@ -82,30 +88,7 @@ app.listen(PORT, () => {
   console.log(`🔢 Node:    ${process.version}`);
   console.log(`🌍 Env:     ${process.env.NODE_ENV || 'development'}`);
   console.log('═══════════════════════════════════════');
+  console.log('Phase 1: Basic server running');
+  console.log('Next: Add Remotion in Phase 2');
+  console.log('═══════════════════════════════════════');
 });
-```
-
-4. Commit: "Simplify server.js - Phase 1 working server"
-
----
-
-### Step 5: Trigger Render.com Deployment
-
-Now go to Render.com:
-
-1. Open your dashboard: `dashboard.render.com`
-2. Click on `video-automation` service
-3. Click **"Manual Deploy"** dropdown
-4. Select **"Clear build cache & deploy"**
-5. Wait 5-10 minutes
-
-Watch the logs. You should see:
-```
-✅ Build successful
-✅ Deploy successful
-═══════════════════════════════════════
-🚀 Video Automation Server - Phase 1
-═══════════════════════════════════════
-📡 Server:  http://localhost:10000
-✅ Health:  http://localhost:10000/health
-...18.17.0

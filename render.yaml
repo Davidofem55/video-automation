@@ -1,13 +1,13 @@
 services:
   - type: web
-    name: remotion-renderer
-    env: node
+    name: video-automation
+    runtime: node
     region: oregon
     plan: free
-    buildCommand: npm install
+    buildCommand: npm install --legacy-peer-deps
     startCommand: node server.js
     envVars:
       - key: NODE_ENV
         value: production
       - key: PORT
-        value: 3001
+        value: 10000

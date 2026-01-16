@@ -1,106 +1,111 @@
 import express from 'express';
 import cors from 'cors';
-import path from 'path';
-import { fileURLToPath } from 'url';
-import fs from 'fs';
-
-// Only import Remotion packages when actually rendering
-// This prevents errors if packages aren't fully installed yet
-let bundle, renderMedia, selectComposition;
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 const app = express();
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 
-// Health check (doesn't need Remotion)
-app.get('/health', (req, res) => {
+// Health check endpoint
+app.get('/', (req, res) => {
   res.json({ 
-    status: 'ok', 
-    service: 'remotion-renderer',
-    timestamp: new Date().toISOString()
+    status: 'Server is running!',
+    service: 'video-automation',
+    endpoints: {
+      health: '/health',
+      render: '/render (POST)'
+    }
   });
 });
 
-// Render endpoint
+app.get('/health', (req, res) => {
+  res.json({ 
+    status: 'ok', 
+    service: 'video-automation-server',
+    timestamp: new Date().toISOString(),
+    nodeVersion: process.version,
+    env: process.env.NODE_ENV || 'development'
+  });
+});
+
+// Placeholder render endpoint (Phase 1)
 app.post('/render', async (req, res) => {
   try {
-    // Lazy load Remotion packages only when needed
-    if (!bundle) {
-      const bundlerModule = await import('@remotion/bundler');
-      const rendererModule = await import('@remotion/renderer');
-      bundle = bundlerModule.bundle;
-      renderMedia = rendererModule.renderMedia;
-      selectComposition = rendererModule.selectComposition;
-    }
-
     const { videoData } = req.body;
     
     if (!videoData) {
-      return res.status(400).json({ error: 'videoData is required' });
+      return res.status(400).json({ 
+        error: 'videoData is required',
+        received: req.body 
+      });
     }
     
-    console.log('Rendering video:', videoData.videoId);
+    console.log('Render request received for:', videoData.videoId || 'unknown');
     
-    // Bundle the Remotion project
-    const bundleLocation = await bundle({
-      entryPoint: path.join(__dirname, 'src/index.js'),
-      webpackOverride: (config) => config,
+    // Phase 1: Just confirm server works
+    // Phase 2: We'll add Remotion rendering here
+    res.json({
+      status: 'success',
+      phase: 'Phase 1 - Server is working!',
+      message: 'Remotion rendering will be added in Phase 2',
+      videoId: videoData.videoId || 'test',
+      timestamp: new Date().toISOString(),
+      nextSteps: 'Add Remotion dependencies and rendering logic'
     });
-    
-    // Get composition
-    const composition = await selectComposition({
-      serveUrl: bundleLocation,
-      id: 'VideoShort',
-      inputProps: { videoData },
-    });
-    
-    // Create output directory
-    const outDir = path.join(__dirname, 'out');
-    if (!fs.existsSync(outDir)) {
-      fs.mkdirSync(outDir, { recursive: true });
-    }
-    
-    // Output path
-    const outputPath = path.join(outDir, `${videoData.videoId}.mp4`);
-    
-    // Render video
-    await renderMedia({
-      composition,
-      serveUrl: bundleLocation,
-      codec: 'h264',
-      outputLocation: outputPath,
-      inputProps: { videoData },
-      onProgress: ({ progress }) => {
-        console.log(`Rendering: ${Math.round(progress * 100)}%`);
-      },
-    });
-    
-    console.log('Render complete:', outputPath);
-    
-    // Send file back
-    res.sendFile(outputPath);
     
   } catch (error) {
-    console.error('Render error:', error);
+    console.error('Error:', error);
     res.status(500).json({ 
       error: error.message,
-      stack: process.env.NODE_ENV === 'production' ? undefined : error.stack 
+      stack: process.env.NODE_ENV === 'production' ? undefined : error.stack
     });
   }
 });
 
+// 404 handler
+app.use((req, res) => {
+  res.status(404).json({
+    error: 'Not found',
+    path: req.path,
+    availableEndpoints: ['/', '/health', '/render (POST)']
+  });
+});
+
 const PORT = process.env.PORT || 10000;
+
 app.listen(PORT, () => {
-  console.log(`🚀 Remotion render server running on port ${PORT}`);
-  console.log(`📡 Health check: http://localhost:${PORT}/health`);
+  console.log('═══════════════════════════════════════');
+  console.log('🚀 Video Automation Server - Phase 1');
+  console.log('═══════════════════════════════════════');
+  console.log(`📡 Server:  http://localhost:${PORT}`);
+  console.log(`✅ Health:  http://localhost:${PORT}/health`);
+  console.log(`🎬 Render:  http://localhost:${PORT}/render`);
+  console.log(`🔢 Node:    ${process.version}`);
+  console.log(`🌍 Env:     ${process.env.NODE_ENV || 'development'}`);
+  console.log('═══════════════════════════════════════');
 });
 ```
 
-### 4. Create `.nvmrc` File (Specifies Node Version)
+4. Commit: "Simplify server.js - Phase 1 working server"
 
-Create a new file called `.nvmrc` in your project root:
+---
+
+### Step 5: Trigger Render.com Deployment
+
+Now go to Render.com:
+
+1. Open your dashboard: `dashboard.render.com`
+2. Click on `video-automation` service
+3. Click **"Manual Deploy"** dropdown
+4. Select **"Clear build cache & deploy"**
+5. Wait 5-10 minutes
+
+Watch the logs. You should see:
 ```
-18.17.0
+✅ Build successful
+✅ Deploy successful
+═══════════════════════════════════════
+🚀 Video Automation Server - Phase 1
+═══════════════════════════════════════
+📡 Server:  http://localhost:10000
+✅ Health:  http://localhost:10000/health
+...18.17.0
